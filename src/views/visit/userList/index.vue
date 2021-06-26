@@ -33,7 +33,19 @@
 			@click="searchMsg = ''"
 			>重置</el-button
 		>
-		<el-button type="warning" round size="small">导出</el-button>
+
+		<download-excel
+			class="export-excel-wrapper"
+			:data="json_data"
+			:fields="json_fields"
+			name="用户信息表.xls"
+			style="display: inline"
+			:before-generate="exportExcel"
+		>
+			<el-button type="warning" round size="small">导出</el-button>
+			<!-- 上面可以自定义自己的样式，还可以引用其他组件button -->
+			<!-- <el-button type="primary" size="small">导出EXCEL</el-button> -->
+		</download-excel>
 		<div>
 			<el-button
 				type="danger"
@@ -69,7 +81,10 @@
 			</el-table-column>
 			<el-table-column prop="account.registerTime" label="注册时间">
 			</el-table-column>
-			<el-table-column prop="account.isRealName" label="是否实名">
+			<el-table-column label="是否实名">
+				<template slot-scope="{ row, $index }">
+					<p>{{ row.account.isRealName === true ? "已实名" : "未实名" }}</p>
+				</template>
 			</el-table-column>
 			<el-table-column label="操作">
 				<template slot-scope="{ row, $index }">
@@ -110,6 +125,14 @@
 				:rules="rules"
 				ref="tmForm"
 			>
+				<el-form-item label="用户Id" style="margin-left: 10px">
+					<el-input
+						autocomplete="off"
+						v-model="tmForm.accountId"
+						size="small"
+						style="width: 300px"
+					></el-input>
+				</el-form-item>
 				<el-form-item label="用户名" prop="name">
 					<el-input
 						autocomplete="off"
@@ -127,12 +150,12 @@
 					></el-input>
 				</el-form-item>
 				<el-form-item label="是否实名">
-					<el-switch v-model="isProp"></el-switch>
+					<el-switch v-model="tmForm.isRealName"></el-switch>
 				</el-form-item>
 			</el-form>
 			<div slot="footer" class="dialog-footer">
-				<el-button @click="dialogTableVisible = false">取 消</el-button>
-				<el-button type="primary" @click="updateUserInfo">确 定</el-button>
+				<el-button @click="dialogTableVisible = false">取 消</el-button
+				><el-button type="primary" @click="updateUserInfo">确 定</el-button>
 			</div>
 		</el-dialog>
 		<el-pagination
@@ -151,10 +174,22 @@
 </template>
 
 <script>
+import JsonExcel from "vue-json-excel";
 export default {
 	name: "Index",
-	components: {},
+	components: {
+		downloadExcel: JsonExcel,
+	},
 	data() {
+		var validatePhone = (rule, value, callback) => {
+			var patt =
+				/^(0|86|17951)?(13[0-9]|15[012356789]|166|17[3678]|18[0-9]|14[57])[0-9]{8}$/;
+			if (!patt.test(value * 1)) {
+				callback(new Error("请输入正确的手机号"));
+			} else {
+				callback();
+			}
+		};
 		return {
 			page: 1,
 			limit: 3,
@@ -163,6 +198,7 @@ export default {
 			dialogTableVisible: false,
 			multipleSelection: [],
 			tmForm: {
+				accountId: "",
 				name: "",
 				phone: "",
 				isRealName: "",
@@ -179,21 +215,32 @@ export default {
 						min: 2,
 						max: 10,
 						message: "长度在 3 到 5 个字符",
-						trigger: "change",
+						trigger: "blur",
 					},
 				],
 				phone: [
 					{ required: true, message: "请输入手机号", trigger: "blur" },
 					{
-						min: 11,
-						max: 11,
-						message: "请输入正确的手机号",
-						trigger: "change",
+						validator: validatePhone,
+						trigger: "blur",
 					},
 				],
 			},
 			searchMsg: "",
 			isProp: false,
+			json_fields: {
+				用户id: "account.accountId", //常规字段
+				用户名: "account.name", //支持嵌套属性
+				电话: "account.phone",
+				注册时间: "account.registerTime",
+				是否实名: {
+					field: "account.isRealName",
+					callback: (value) => {
+						return value ? "已实名" : "未实名";
+					},
+				},
+			},
+			json_data: [],
 		};
 	},
 	created() {},
@@ -208,12 +255,14 @@ export default {
 					page: this.page,
 					limit: this.limit,
 				});
-				console.log(this.limit, this.page);
-				console.log(result.accounts.length);
+				// console.log(this.limit, this.page);
+				// console.log(result.accounts.length);
 				// if (result) {
 				// }
 				this.total = result.total_num;
-				this.tableData = result.accounts;
+				let accounts = this.filterData(result);
+				console.log(accounts, 1);
+				this.tableData = accounts;
 			} catch (error) {}
 		},
 		// 这个是切换分页的回调
@@ -255,9 +304,12 @@ export default {
 			}
 		},
 		updateUserInfo() {
-			this.$refs.tmForm.validate((valid) => {
+			this.$refs.tmForm.validate(async (valid) => {
 				if (valid) {
-					dialogTableVisible = false;
+					this.dialogTableVisible = false;
+					const result = await this.$API.UserChange(this.tmForm);
+					// console.log(result);
+					this.getTrademarkList();
 				} else {
 					console.log("error submit!!");
 					return false;
@@ -312,6 +364,22 @@ export default {
 			console.log(result);
 			this.total = result.total_num;
 			this.tableData = result.accounts;
+		},
+		filterData(result) {
+			// console.log(result.accounts, 1);
+			let oddAccounts = result.accounts;
+			let newAccounts = oddAccounts.filter(function (item) {
+				item.account.isRealName = item.account.isRealName === 1 ? true : false;
+				return item;
+			});
+			return newAccounts;
+		},
+		async exportExcel() {
+			const result = await this.$API.getOrSearchUserInfo({
+				page: 1,
+				limit: this.total,
+			});
+			this.json_data = this.filterData(result);
 		},
 	},
 };

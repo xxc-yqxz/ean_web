@@ -5,6 +5,7 @@ import store from '../store'
 import { getToken } from '@/utils/auth'
 import Config from '@/settings'
 import Cookies from 'js-cookie'
+import NProgress from 'nprogress'
 
 // 创建axios实例
 const service = axios.create({
@@ -15,6 +16,7 @@ const service = axios.create({
 // request拦截器
 service.interceptors.request.use(
   config => {
+    NProgress.start()
     if (getToken()) {
       config.headers['Authorization'] = getToken() // 让每个请求携带自定义token 请根据实际情况自行修改
     }
@@ -29,14 +31,16 @@ service.interceptors.request.use(
 // response 拦截器
 service.interceptors.response.use(
   response => {
+    NProgress.done()
     return response.data
   },
   error => {
+    NProgress.done()
     // 兼容blob下载出错json提示
     if (error.response.data instanceof Blob && error.response.data.type.toLowerCase().indexOf('json') !== -1) {
       const reader = new FileReader()
       reader.readAsText(error.response.data, 'utf-8')
-      reader.onload = function(e) {
+      reader.onload = function (e) {
         const errorMsg = JSON.parse(reader.result).message
         Notification.error({
           title: errorMsg,

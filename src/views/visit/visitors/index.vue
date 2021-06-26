@@ -141,6 +141,15 @@ export default {
 	name: "Index",
 	components: {},
 	data() {
+		var validatePhone = (rule, value, callback) => {
+			var patt =
+				/^(0|86|17951)?(13[0-9]|15[012356789]|166|17[3678]|18[0-9]|14[57])[0-9]{8}$/;
+			if (!patt.test(value * 1)) {
+				callback(new Error("请输入正确的手机号"));
+			} else {
+				callback();
+			}
+		};
 		return {
 			page: 1,
 			limit: 3,
@@ -159,21 +168,19 @@ export default {
 				// 每个规则对象里面包含三个东西，1、规则 2、错误提示信息 3、触发时机（验证时机）
 				// 触发时机：一共有三个，失去焦点的时候blur 内容改变的时候change 整体验证的时候
 				name: [
-					{ required: true, message: "请输入用户名", trigger: "blur" },
+					{ required: true, message: "请输入用户名", trigger: "change" },
 					{
 						min: 2,
 						max: 10,
-						message: "长度在 3 到 5 个字符",
+						message: "长度在 2 到 10 个字符",
 						trigger: "change",
 					},
 				],
 				phone: [
-					{ required: true, message: "请输入手机号", trigger: "blur" },
+					{ required: true, message: "手机号为必填项", trigger: "blur" },
 					{
-						min: 11,
-						max: 11,
-						message: "请输入正确的手机号",
-						trigger: "change",
+						validator: validatePhone,
+						trigger: "blur",
 					},
 				],
 				address: [{ required: true, message: "请输入地址", trigger: "blur" }],

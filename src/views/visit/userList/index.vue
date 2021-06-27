@@ -131,6 +131,7 @@
 						v-model="tmForm.accountId"
 						size="small"
 						style="width: 300px"
+						:disabled="true"
 					></el-input>
 				</el-form-item>
 				<el-form-item label="用户名" prop="name">
@@ -149,9 +150,9 @@
 						style="width: 200px; margin-left: 15px"
 					></el-input>
 				</el-form-item>
-				<el-form-item label="是否实名">
+				<!-- <el-form-item label="是否实名">
 					<el-switch v-model="tmForm.isRealName"></el-switch>
-				</el-form-item>
+				</el-form-item> -->
 			</el-form>
 			<div slot="footer" class="dialog-footer">
 				<el-button @click="dialogTableVisible = false">取 消</el-button

@@ -106,7 +106,7 @@
 			<el-table-column prop="record.date" label="拜访日期"> </el-table-column>
 			<el-table-column prop="record.time" label="拜访时间" width="50">
 			</el-table-column>
-			<el-table-column label="审核" width="140px">
+			<el-table-column label="审核" width="140px" fixed="right">
 				<template slot-scope="{ row, $index }">
 					<el-radio-group
 						:value="row.record.isAccess"
@@ -124,6 +124,7 @@
 							>通过</el-radio
 						>
 						<el-radio
+							class="rejectBtn"
 							:label="false"
 							border
 							style="margin: 10px 0 10px 8px"
@@ -347,5 +348,20 @@ export default {
 }
 .app_container {
 	margin-top: 20px;
+}
+</style>
+<style>
+.rejectBtn.is-checked {
+	border: 1px solid #ef475d !important;
+}
+.rejectBtn .el-radio__inner:hover {
+	border: 1px solid #ef475d;
+}
+.rejectBtn .el-radio__input.is-checked + .el-radio__label {
+	color: #ef475d !important;
+}
+.rejectBtn .el-radio__input.is-checked .el-radio__inner {
+	background: #ef475d !important;
+	border-color: #ef475d !important;
 }
 </style>

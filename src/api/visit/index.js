@@ -12,8 +12,13 @@ export default {
     UserDelete(userIds) {
         return request.post(`/api/admin/user_delete`, userIds)
     },
-
-    UserOutPut(userList) {
-        return request.post(`/api/admin/user_output`, userList)
-    }
+    getOrSearchRecordInfo(searchInfo) {
+        return request.post(`/api/admin/record_info`, searchInfo)
+    },
+    recordDelete(recordIds) {
+        return request.post(`/api/admin/record_delete`, recordIds)
+    },
+    changeApproval(info) {
+        return request.post(`/api/admin/approval`, info)
+    },
 }

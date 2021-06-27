@@ -1,131 +1,145 @@
 <template>
 	<div class="app-container">
-		<span class="time_text">规定时间段搜索：</span>
-		<el-date-picker
-			v-model="value1"
-			size="small"
-			type="datetimerange"
-			range-separator="至"
-			start-placeholder="开始日期"
-			end-placeholder="结束日期"
-			align="center"
-			class="time_select"
-		>
-		</el-date-picker>
 		<el-input
 			placeholder="请输入内容"
 			style="width: 200px; margin-right: 15px"
 			size="small"
+			v-model="searchMsg"
 		></el-input>
 
-		<el-button type="primary" icon="el-icon-search" size="small"
+		<el-button
+			type="primary"
+			icon="el-icon-search"
+			size="small"
+			@click="searchInfo()"
 			>搜索</el-button
 		>
-		<el-button type="primary" icon="el-icon-refresh" size="small"
+		<el-button
+			type="primary"
+			icon="el-icon-refresh"
+			size="small"
+			@click="searchMsg = ''"
 			>重置</el-button
 		>
-		<el-button type="warning" round size="small">导出</el-button>
+
+		<download-excel
+			class="export-excel-wrapper"
+			:data="json_data"
+			:fields="json_fields"
+			name="访客信息表.xls"
+			style="display: inline"
+			:before-generate="exportExcel"
+		>
+			<el-button type="warning" round size="small">导出</el-button>
+			<!-- 上面可以自定义自己的样式，还可以引用其他组件button -->
+			<!-- <el-button type="primary" size="small">导出EXCEL</el-button> -->
+		</download-excel>
 		<div>
 			<el-button
 				type="danger"
-				style="margin: 20px 0"
+				style="margin-top: 10px"
 				size="small"
-				@click="deleteMany()"
+				@click="showHint()"
 				>批量删除</el-button
 			>
 		</div>
 		<el-table
-			ref="multipleTable"
 			:data="tableData"
-			tooltip-effect="dark"
-			style="width: 100%"
 			border
+			style="width: 100%; margin-top: 20px"
+			ref="multipleTable"
+			@selection-change="handleSelectionChange"
 		>
+			<!-- <el-table-column
+				header-align="center"
+				align="center"
+				type="index"
+				prop="prop"
+				label="label"
+			>
+			</el-table-column> -->
 			<el-table-column type="selection" width="55" align="center">
 			</el-table-column>
-			<el-table-column type="index" label="Id" width="55"> </el-table-column>
-			<el-table-column label="时间" width="120">
-				<template slot-scope="scope">{{ scope.row.date }}</template>
+			<el-table-column prop="record.recordId" label="访问记录Id" width="200">
 			</el-table-column>
-			<el-table-column label="地址" width="250" prop="address">
-			</el-table-column>
-			<el-table-column prop="name" label="姓名" width="120"> </el-table-column>
-			<el-table-column prop="startTime" label="开始时间"> </el-table-column>
-			<el-table-column prop="endTime" label="结束时间"> </el-table-column>
-			<el-table-column prop="phone" label="电话"> </el-table-column>
-			<el-table-column label="操作">
+			<el-table-column prop="assistantIds" label="访客Id" width="250">
 				<template slot-scope="{ row, $index }">
-					<el-button
-						size="mini"
-						icon="el-icon-edit-outline"
-						@click="showUpdateDialog(row)"
-					></el-button>
-					<el-popover placement="top" width="100" v-model="row.visible">
-						<p>确定此条用户信息吗？</p>
-						<div style="text-align: right; margin: 0">
-							<el-button size="mini" type="text" @click="row.visible = false"
-								>取消</el-button
-							>
-							<el-button type="primary" size="mini" @click="row.visible = false"
-								>确定</el-button
-							>
-						</div>
-						<el-button
-							size="mini"
-							slot="reference"
-							type="danger"
-							icon="el-icon-delete"
-						></el-button>
-					</el-popover>
+					<!-- <div>{{ row.assistantIds }}</div> -->
+					<div
+						v-for="(val, key) in row.assistantIds"
+						style="margin-bottom: 11px"
+					>
+						{{ val }}
+					</div>
+				</template>
+			</el-table-column>
+			<el-table-column prop="assistantCardNums" label="访客卡号" width="160">
+				<template slot-scope="{ row, $index }">
+					<!-- <div>{{ row.assistantIds }}</div> -->
+					<div
+						v-for="(val, key) in row.assistantCardNums"
+						style="margin-bottom: 11px"
+					>
+						{{ val }}
+					</div>
+				</template>
+			</el-table-column>
+			<el-table-column prop="names" label="访客姓名" width="100px">
+				<template slot-scope="{ row, $index }">
+					<!-- <div>{{ row.assistantIds }}</div> -->
+					<div v-for="(val, key) in row.names" style="margin-bottom: 11px">
+						{{ val }}
+					</div>
+				</template>
+			</el-table-column>
+			<el-table-column prop="phones" label="电话">
+				<template slot-scope="{ row, $index }">
+					<!-- <div>{{ row.assistantIds }}</div> -->
+
+					<div v-for="(val, key) in row.phones" style="margin-bottom: 11px">
+						{{ val }}
+					</div>
+				</template>
+			</el-table-column>
+			<el-table-column prop="record.flag" label="审批状态"> </el-table-column>
+			<el-table-column prop="record.reason" label="拜访理由"> </el-table-column>
+			<el-table-column prop="record.date" label="拜访日期"> </el-table-column>
+			<el-table-column prop="record.time" label="拜访时间" width="50">
+			</el-table-column>
+			<el-table-column label="审核" width="140px">
+				<template slot-scope="{ row, $index }">
+					<el-radio-group
+						:value="row.record.isAccess"
+						v-if="
+							row.record.flag === '通过' ||
+							row.record.flag === '拒绝' ||
+							row.record.flag === '待审批'
+						"
+					>
+						<el-radio
+							:label="true"
+							border
+							style="margin-left: 38px; margin-top: 10px"
+							@change="changeAccess(true, row)"
+							>通过</el-radio
+						>
+						<el-radio
+							:label="false"
+							border
+							style="margin: 10px 0 10px 8px"
+							@change="changeAccess(false, row)"
+							>拒绝</el-radio
+						>
+					</el-radio-group>
+					<el-tag type="info" v-if="row.record.flag === '过期'">过期</el-tag>
 				</template>
 			</el-table-column>
 		</el-table>
-		<el-dialog
-			title="用户信息"
-			:visible.sync="dialogTableVisible"
-			width="600px"
-		>
-			<el-form
-				style="width: 100%; margin-left: 50px"
-				:model="tmForm"
-				:rules="rules"
-				ref="tmForm"
-			>
-				<el-form-item label="姓名" inline prop="name">
-					<el-input
-						autocomplete="off"
-						v-model="tmForm.name"
-						size="small"
-						style="width: 200px"
-					></el-input>
-				</el-form-item>
-				<el-form-item label="地址" prop="address">
-					<el-input
-						autocomplete="off"
-						v-model="tmForm.address"
-						size="small"
-						style="width: 300px"
-					></el-input>
-				</el-form-item>
-				<el-form-item label="电话" prop="phone">
-					<el-input
-						autocomplete="off"
-						v-model="tmForm.phone"
-						size="small"
-						style="width: 300px"
-					></el-input>
-				</el-form-item>
-			</el-form>
-			<div slot="footer" class="dialog-footer">
-				<el-button @click="dialogTableVisible = false">取 消</el-button>
-				<el-button type="primary" @click="updateUserInfo">确 定</el-button>
-			</div>
-		</el-dialog>
 		<el-pagination
 			background
 			style="text-align: center; margin-top: 20px"
 			:current-page="page"
-			:page-sizes="[1, 2, 5]"
+			:page-sizes="[3, 5, 10]"
 			:page-size="limit"
 			layout="sizes, prev, pager, next, jumper,->,total"
 			:total="total"
@@ -137,54 +151,61 @@
 </template>
 
 <script>
+import JsonExcel from "vue-json-excel";
 export default {
 	name: "Index",
-	components: {},
+	components: {
+		downloadExcel: JsonExcel,
+	},
 	data() {
-		var validatePhone = (rule, value, callback) => {
-			var patt =
-				/^(0|86|17951)?(13[0-9]|15[012356789]|166|17[3678]|18[0-9]|14[57])[0-9]{8}$/;
-			if (!patt.test(value * 1)) {
-				callback(new Error("请输入正确的手机号"));
-			} else {
-				callback();
-			}
-		};
 		return {
 			page: 1,
-			limit: 3,
+			limit: 5,
 			total: 0,
 			value1: [,],
-			dialogTableVisible: false,
-			tmForm: {
-				name: "",
-				address: "",
-				phone: "",
-			},
+			multipleSelection: [],
 			tableData: [],
-			rules: {
-				// 每个要验证的字段规则都是一个数组
-				// 数组里面是对象，每一个对象就代表是验证的一个规则
-				// 每个规则对象里面包含三个东西，1、规则 2、错误提示信息 3、触发时机（验证时机）
-				// 触发时机：一共有三个，失去焦点的时候blur 内容改变的时候change 整体验证的时候
-				name: [
-					{ required: true, message: "请输入用户名", trigger: "change" },
-					{
-						min: 2,
-						max: 10,
-						message: "长度在 2 到 10 个字符",
-						trigger: "change",
+			dialogTableVisible: false,
+			searchMsg: "",
+			json_fields: {
+				访问记录id: "record.recordId",
+				访问人数: "record.peopleNum",
+				访问原因: "record.reason",
+				审核状态: "record.flag",
+				访问时间: "record.time",
+				访问日期: "record.date",
+				访问人员: {
+					field: "names",
+					callback: (value) => {
+						let result = "";
+						value.forEach((item, index) => {
+							result += item + "---";
+						});
+						return result.slice(0, -3);
 					},
-				],
-				phone: [
-					{ required: true, message: "手机号为必填项", trigger: "blur" },
-					{
-						validator: validatePhone,
-						trigger: "blur",
+				},
+				访问人员Id: {
+					field: "assistantIds",
+					callback: (value) => {
+						let result = "";
+						value.forEach((item, index) => {
+							result += item + "---";
+						});
+						return result.slice(0, -3);
 					},
-				],
-				address: [{ required: true, message: "请输入地址", trigger: "blur" }],
+				},
+				访问人员电话: {
+					field: "phones",
+					callback: (value) => {
+						let result = "";
+						value.forEach((item, index) => {
+							result += item + "---";
+						});
+						return result.slice(0, -3);
+					},
+				},
 			},
+			json_data: [],
 		};
 	},
 	created() {},
@@ -195,35 +216,83 @@ export default {
 		async getTrademarkList(page = 1) {
 			this.page = page;
 			try {
-				const result = await this.$API.getOrSearchUserInfo({
+				const result = await this.$API.getOrSearchRecordInfo({
 					page: this.page,
 					limit: this.limit,
 				});
+				this.total = result.total_num;
+				this.tableData = this.filterData(result);
 			} catch (error) {}
 		},
-		// 这个是切换分页的回调
-		// handleCurrentChange(page) {
-		// 	this.page = page;
-		// 	this.getTrademarkList();
-		// },
-
-		// 这个是切换每页数量的回调,这个回调不能省略
+		filterData(data) {
+			let assistantDatas = [];
+			let assistant = {};
+			data.records.forEach((item, index) => {
+				assistant = {};
+				let assistantIds = [];
+				let assistantCardNums = [];
+				let names = [];
+				let phones = [];
+				item.assistantList.forEach((item2, index) => {
+					assistantIds.push(item2.assistantId);
+					assistantCardNums.push(item2.idCardNum);
+					names.push(item2.name);
+					phones.push(item2.phone);
+				});
+				assistant.assistantIds = assistantIds;
+				assistant.assistantCardNums = assistantCardNums;
+				assistant.names = names;
+				assistant.phones = phones;
+				if (item.record.flag === 1) {
+					item.record.flag = "通过";
+					item.record.isAccess = true;
+				} else if (item.record.flag === 2) {
+					item.record.flag = "拒绝";
+					item.record.isAccess = false;
+				} else if (item.record.flag === 3) {
+					item.record.flag = "过期";
+				} else if (item.record.flag === 4) {
+					item.record.flag = "待审批";
+					item.record.isAccess = "";
+				}
+				assistant.record = item.record;
+				assistantDatas.push(assistant);
+			});
+			return assistantDatas;
+		},
+		async changeAccess(val, row) {
+			let flag = 2;
+			console.log(val, row);
+			if (val === true) {
+				flag = 1;
+			}
+			let result = await this.$API.changeApproval({
+				id: row.record.recordId,
+				flag,
+			});
+			this.getTrademarkList(this.page);
+		},
 		handleSizeChange(size) {
 			this.limit = size;
+			this.getTrademarkList();
 		},
-		showUpdateDialog(row) {
-			this.dialogTableVisible = true;
-			this.tmForm = {
-				...row, // 最简单的浅拷贝
-			};
+		handleSelectionChange(val) {
+			// this.multipleSelection = val;
+			// console.log(val);
+			this.multipleSelection = [];
+			val.forEach((item, index) => {
+				this.multipleSelection.push(item.record.recordId);
+			});
+			console.log(this.multipleSelection);
 		},
-		deleteMany() {
+		showHint() {
 			this.$confirm("确定删除选中数据?", "提示", {
 				confirmButtonText: "确定",
 				cancelButtonText: "取消",
 				type: "warning",
 			})
 				.then(() => {
+					this.deleteMany();
 					this.$message({
 						type: "success",
 						message: "删除成功!",
@@ -236,15 +305,33 @@ export default {
 					});
 				});
 		},
-		updateUserInfo() {
-			this.$refs.tmForm.validate((valid) => {
-				if (valid) {
-					dialogTableVisible = false;
-				} else {
-					console.log("error submit!!");
-					return false;
-				}
+		async deleteMany(row = "") {
+			console.log(this.multipleSelection, 222);
+			const result = await this.$API.recordDelete(this.multipleSelection);
+			this.getTrademarkList(
+				this.tableData.length > this.multipleSelection.length
+					? this.page
+					: this.page - 1
+			);
+		},
+		async searchInfo() {
+			let searchMsg = {
+				page: this.page,
+				limit: this.limit,
+				key: this.searchMsg,
+			};
+			const result = await this.$API.getOrSearchRecordInfo(searchMsg);
+			console.log(searchMsg);
+			console.log(result);
+			this.total = result.total_num;
+			this.tableData = this.filterData(result);
+		},
+		async exportExcel() {
+			const result = await this.$API.getOrSearchRecordInfo({
+				page: 1,
+				limit: this.total,
 			});
+			this.json_data = this.filterData(result);
 		},
 	},
 };

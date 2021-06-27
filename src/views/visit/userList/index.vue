@@ -94,7 +94,7 @@
 						@click="showUpdateDialog(row)"
 					></el-button>
 					<el-popover placement="top" width="100" v-model="row.visible">
-						<p>确定此条用户信息吗？</p>
+						<p>确定删除此条用户信息吗？</p>
 						<div style="text-align: right; margin: 0">
 							<el-button size="mini" type="text" @click="row.visible = false"
 								>取消</el-button
@@ -285,9 +285,12 @@ export default {
 		},
 		async deleteMany(row = "") {
 			if (row === "") {
-				console.log(111);
 				const result = await this.$API.UserDelete(this.multipleSelection);
-				this.getTrademarkList();
+				this.getTrademarkList(
+					this.tableData.length > this.multipleSelection.length
+						? this.page
+						: this.page - 1
+				);
 			} else {
 				let deleteId = [];
 				deleteId.push(row.account.accountId);
@@ -299,7 +302,9 @@ export default {
 						duration: 1000,
 					});
 					this.dialogTableVisible = false;
-					this.getTrademarkList();
+					this.getTrademarkList(
+						this.tableData.length > 1 ? this.page : this.page - 1
+					);
 				} catch (error) {}
 			}
 		},
@@ -309,7 +314,7 @@ export default {
 					this.dialogTableVisible = false;
 					const result = await this.$API.UserChange(this.tmForm);
 					// console.log(result);
-					this.getTrademarkList();
+					this.getTrademarkList(this.page);
 				} else {
 					console.log("error submit!!");
 					return false;
